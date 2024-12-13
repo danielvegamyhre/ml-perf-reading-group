@@ -77,6 +77,20 @@ def _attn_fwd(
     BLOCK_SIZE_Q: tl.constexpr,
     BLOCK_SIZE_KV: tl.constexpr,
 ):
+  '''
+  Parallel kernel instances will each handle a separate
+  (query block index, head index, index in batch). 
+  
+  This parallelizes over the Q blocks (the outer for-loop in
+  the Flash Attention algorithm), and within those blocks
+  parallelizes further across each sequence (index in the batch
+  dimension), and within those parallelizes further across each
+  head.
+
+  Total degree of parallelization will be: 
+  
+  (SEQ_LEN // BLOCK_SIZE Q) * BATCH_SIZE * NUM_HEADS
+  '''
   inf = 1.0e6
 
   # each program handles a specific query head for a specific index in the batch dimension.
