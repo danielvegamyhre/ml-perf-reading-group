@@ -201,8 +201,7 @@ def _attn_fwd(
   V_block_ptr = tl.advance(V_block_ptr, (start, 0))
 
   # for each Q block, iterate through all associated K and V blocks
-  end = query_block_idx * BLOCK_SIZE_Q
-  for start_kv_idx in tl.range(0, end, BLOCK_SIZE_KV):
+  for start_kv_idx in tl.range(start, end, BLOCK_SIZE_KV):
     causal_mask = offs_q[:, None] >= (start_kv_idx + offs_kv[None, :])
 
     # load next K block into SRAM
