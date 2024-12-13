@@ -187,21 +187,11 @@ def _attn_fwd(
   # loop doing O = softmax(Q @ K^T / scale) @ V
   Q_block = tl.load(Q_block_ptr)                                # (BLOCK_SIZE_Q, HEAD_DIM)
 
-  # go to correct starting block of K/V for the given Q
-  start, end = query_block_idx * BLOCK_SIZE_Q, (query_block_idx + 1) * BLOCK_SIZE_Q
-
-  # move K block ptr to start of the first K block for this Q block.
-  # K dims = (HEAD_DIM, BLOCK_SIZE_KV) -> inverse of Q and V since it is K^T
-  # so we advance 0 along head dim and only move starting offset along the actual keys
-  K_block_ptr = tl.advance(K_block_ptr, (0, start))
-
-  # move V block ptr to first V block 
-  # V dims = (BLOCK_SIZE_KV, HEAD_DIM)
-  # so we advance to the correct starting offset along the values and stay at start of head dim
-  V_block_ptr = tl.advance(V_block_ptr, (start, 0))
-
   # for each Q block, iterate through all associated K and V blocks
-  for start_kv_idx in tl.range(start, end, BLOCK_SIZE_KV):
+  # (up through diagonal of QK, since this is causal attention we don't need to compute
+  # values for the top right triangle of QK).
+  end_key_idx = (query_block_idx + 1) * BLOCK_SIZE_Q
+  for start_kv_idx in tl.range(0, end_key_idx, BLOCK_SIZE_KV):
     causal_mask = offs_q[:, None] >= (start_kv_idx + offs_kv[None, :])
 
     # load next K block into SRAM
@@ -222,7 +212,7 @@ def _attn_fwd(
     corrective_factor = tl.exp(global_qk_max - local_qk_max)    # (BLOCK_SIZE_Q,)
 
     # P[i,j] (exp scores)
-    P_block = tl.exp(QK_block)                                  # (BLOCK_SIZE_Q, BLOCK_SIZE_KV)
+    P_block = tl.exp(QK_block - local_qk_max[:, None])          # (BLOCK_SIZE_Q, BLOCK_SIZE_KV)
 
     # rowsum(P[i,j])
     exp_sum = tl.sum(P_block, axis=1)                           # (BLOCK_SIZE_Q,)
