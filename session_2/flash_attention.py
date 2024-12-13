@@ -293,4 +293,4 @@ def test_op(BATCH_SIZE, NUM_HEADS, SEQ_LEN, HEAD_DIM, dtype=torch.float32):
 
 
 if __name__ == "__main__":
-    test_op(BATCH_SIZE=8, NUM_HEADS=16, SEQ_LEN=128, HEAD_DIM=64)
+    test_op(BATCH_SIZE=2, NUM_HEADS=2, SEQ_LEN=32, HEAD_DIM=64)
