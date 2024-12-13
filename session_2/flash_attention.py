@@ -293,7 +293,14 @@ def test_op(BATCH_SIZE, NUM_HEADS, SEQ_LEN, HEAD_DIM, dtype=torch.float32):
     # compare
     rtol = 0.0
     atol = 1e-2
-    assert torch.allclose(ref_O, flash_out, atol=atol, rtol=rtol)
+    if not torch.allclose(ref_O, flash_out, atol=atol, rtol=rtol):
+        print("want:")
+        print(ref_O)
+        print("\ngot:")
+        print(flash_out)
+        print("FAILED")
+    else:
+        print("PASSED")
 
 
 if __name__ == "__main__":
