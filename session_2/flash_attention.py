@@ -203,6 +203,9 @@ def _attn_fwd(
     # load next K block into SRAM
     K_block = tl.load(K_block_ptr)                              # (HEAD_DIM, BLOCK_SIZE_Q)
 
+    # load V block into SRAM
+    V_block = tl.load(V_block_ptr)                              # (BLOCK_SIZE_KV, HEAD_DIM)
+    
     # compute attention scores
     # S[i,j]
     QK_block = (
@@ -230,9 +233,6 @@ def _attn_fwd(
 
     # m[i]
     global_qk_max = tl.maximum(global_qk_max, local_qk_max)
-    
-    # load V block into SRAM
-    V_block = tl.load(V_block_ptr)                              # (BLOCK_SIZE_KV, HEAD_DIM)
 
     # apply corrective factor to O block
     # O[i,j]
@@ -244,7 +244,7 @@ def _attn_fwd(
     V_block_ptr = tl.advance(V_block_ptr, (BLOCK_SIZE_KV, 0))
 
   # normalize scores to finalize softmax block
-  O_block = O_block / global_softmax_denom[:, None]             # (BLOCK_SIZE_Q, HEAD_DIM
+  O_block = O_block / global_softmax_denom[:, None]             # (BLOCK_SIZE_Q, HEAD_DIM)
     
   # store O block output in HBM
   tl.store(O_block_ptr, O_block)
