@@ -176,14 +176,6 @@ def _attn_fwd(
       order=(1,0),
   )
 
-  # offsets of each query within the current Q block.
-  offs_q = query_block_idx * BLOCK_SIZE_Q + tl.arange(0, BLOCK_SIZE_Q)
-
-  # offsets for each k/v in K/V blocks. for each Q block 
-  # need to loop through all of K and V so this will start at 0
-  # offset.
-  offs_kv = tl.arange(0, BLOCK_SIZE_KV)
-
   # m_i = max seen so far in QK. track one for each query.
   global_qk_max = tl.full((BLOCK_SIZE_Q,), -float('inf'), dtype=tl.float32)
 
@@ -196,6 +188,10 @@ def _attn_fwd(
   # load Q block into SRAM, it will be shared for all iterations of inner
   # loop doing O = softmax(Q @ K^T / scale) @ V
   Q_block = tl.load(Q_block_ptr)                                # (BLOCK_SIZE_Q, HEAD_DIM)
+
+  # set up q block and kv block offsets for causal masking.
+  offs_q = query_block_idx * BLOCK_SIZE_Q + tl.arange(0, BLOCK_SIZE_Q)
+  offs_kv = tl.arange(0, BLOCK_SIZE_KV)
 
   # for each Q block, iterate through all associated K and V blocks
   # (up through diagonal of QK, since this is causal attention we don't need to compute
