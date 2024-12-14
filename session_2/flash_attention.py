@@ -10,6 +10,16 @@ class FlashAttention(torch.autograd.Function):
 
     O = torch.empty_like(Q)
     batch_size, num_heads, seq_len, head_dim = Q.shape
+
+    #   Parallel kernel instances will each handle a separate
+    #   (query block index, head index, index in batch). 
+    #   This parallelizes over the Q blocks (the outer for-loop in
+    #   the Flash Attention algorithm), and within those blocks
+    #   parallelizes further across each sequence (index in the batch
+    #   dimension), and within those parallelizes further across each
+    #   head.
+    #   Total degree of parallelization will be: 
+    #   (SEQ_LEN // BLOCK_SIZE Q) * BATCH_SIZE * NUM_HEADS
     grid = lambda meta: (
         triton.cdiv(seq_len, meta["BLOCK_SIZE_Q"]),
         batch_size * num_heads,
