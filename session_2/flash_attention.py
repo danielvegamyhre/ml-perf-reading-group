@@ -132,8 +132,8 @@ def _attn_fwd(
       # the (seq, head) sub tensor has all the queries in it,
       # so offset into the specific query block we want.
       # # Q[batch_idx, head_idx, q_idx:q_idx+block_size_q, :]
-      offsets=(query_block_idx * BLOCK_SIZE_Q, 0), 
       block_shape=(BLOCK_SIZE_Q, HEAD_DIM),
+      offsets=(query_block_idx * BLOCK_SIZE_Q, 0), 
       order=(1,0),
   )
 
@@ -177,10 +177,10 @@ def _attn_fwd(
   )
 
   # m_i = max seen so far in QK. track one for each query.
-  global_qk_max = tl.full((BLOCK_SIZE_Q,), -float('inf'), dtype=tl.float32)
+  s_max = tl.full((BLOCK_SIZE_Q,), -float('inf'), dtype=tl.float32)
 
   # l_i = accumlated global softmax denominator / exp sum
-  global_softmax_denom = tl.zeros((BLOCK_SIZE_Q,), dtype=tl.float32)
+  softmax_denom = tl.zeros((BLOCK_SIZE_Q,), dtype=tl.float32)
 
   # accumulator for block of output matrix being computed by this program id.
   O_block = tl.zeros((BLOCK_SIZE_Q, HEAD_DIM), dtype=tl.float32)
@@ -208,43 +208,44 @@ def _attn_fwd(
     
     # compute attention scores
     # S[i,j]
-    QK_block = (
+    S_block = (
         tl.dot(Q_block, K_block) 
         * softmax_scale 
         + tl.where(causal_mask, 0, -inf)
     )                                                           # (BLOCK_SIZE_Q, BLOCK_SIZE_KV)
 
     # m[i,j]
-    local_qk_max = tl.max(QK_block, axis=1)                     # (BLOCK_SIZE_Q,)
+    local_s_max = tl.max(S_block, axis=1)                       # (BLOCK_SIZE_Q,)
+    new_s_max = tl.maximum(s_max, local_s_max)
 
     # corrective factor for previously accumulated denominator
-    corrective_factor = tl.exp(global_qk_max - local_qk_max)    # (BLOCK_SIZE_Q,)
+    corrective_factor = tl.exp(s_max - new_s_max)               # (BLOCK_SIZE_Q,)
 
     # P[i,j] (exp scores)
-    P_block = tl.exp(QK_block - local_qk_max[:, None])          # (BLOCK_SIZE_Q, BLOCK_SIZE_KV)
+    P_block = tl.exp(S_block - new_s_max[:, None])              # (BLOCK_SIZE_Q, BLOCK_SIZE_KV)
 
     # rowsum(P[i,j])
-    exp_sum = tl.sum(P_block, axis=1)                           # (BLOCK_SIZE_Q,)
+    P_rowsum = tl.sum(P_block, axis=1)                          # (BLOCK_SIZE_Q,)
 
     # l[i,j]
-    global_softmax_denom = (
-        global_softmax_denom * corrective_factor + exp_sum      # (BLOCK_SIZE_Q,)
+    softmax_denom = (
+        corrective_factor * softmax_denom + P_rowsum            # (BLOCK_SIZE_Q,)
     )
-
-    # m[i]
-    global_qk_max = tl.maximum(global_qk_max, local_qk_max)
 
     # apply corrective factor to O block
     # O[i,j]
     O_block = O_block * corrective_factor[:, None]              # (BLOCK_SIZE_Q, HEAD_DIM)
     O_block = O_block + tl.dot(P_block, V_block)                # (BLOCK_SIZE_Q, HEAD_DIM)
 
+    # m[i] -- update global max
+    s_max = tl.maximum(s_max, local_s_max)
+
     # move to next K,V blocks
     K_block_ptr = tl.advance(K_block_ptr, (0, BLOCK_SIZE_KV))
     V_block_ptr = tl.advance(V_block_ptr, (BLOCK_SIZE_KV, 0))
 
   # normalize scores to finalize softmax block
-  O_block = O_block / global_softmax_denom[:, None]             # (BLOCK_SIZE_Q, HEAD_DIM)
+  O_block = O_block / softmax_denom[:, None]                    # (BLOCK_SIZE_Q, HEAD_DIM)
     
   # store O block output in HBM
   tl.store(O_block_ptr, O_block)
