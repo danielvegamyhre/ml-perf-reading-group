@@ -8,8 +8,9 @@ class FlashAttention(torch.autograd.Function):
     HEAD_DIM_Q, HEAD_DIM_K, HEAD_DIM_V = Q.shape[-1], K.shape[-1], V.shape[-1]
     assert HEAD_DIM_Q == HEAD_DIM_K and HEAD_DIM_K == HEAD_DIM_V
 
-    O = torch.empty_like(Q)
     batch_size, num_heads, seq_len, head_dim = Q.shape
+    O = torch.empty_like(Q)
+    M = torch.zeros((batch_size, num_heads, seq_len))
 
     #   Parallel kernel instances will each handle a separate
     #   (query block index, head index, index in batch). 
@@ -31,6 +32,7 @@ class FlashAttention(torch.autograd.Function):
       K_ptr=K,  # BATCH_SIZE, NUM_HEADS, SEQ_LEN, HEAD_DIM
       V_ptr=V,  # BATCH_SIZE, NUM_HEADS, SEQ_LEN, HEAD_DIM
       O_ptr=O,  # BATCH_SIZE, NUM_HEADS, SEQ_LEN, HEAD_DIM
+      M_ptr=M,  # BATCH_SIZE, NUM_HEADS, SEQ_LEN
       softmax_scale=softmax_scale,
       stride_Q_batch=Q.stride(0),
       stride_Q_head=Q.stride(1),
@@ -48,6 +50,9 @@ class FlashAttention(torch.autograd.Function):
       stride_O_head=O.stride(1),
       stride_O_seq=O.stride(2),
       stride_O_dim=O.stride(3),
+      stride_M_batch=M.stride(0),
+      stride_M_head=M.stride(1),
+      stride_M_seq=M.stride(2),
       BATCH_SIZE=batch_size,
       NUM_HEADS=num_heads,
       SEQ_LEN=seq_len,
@@ -55,12 +60,22 @@ class FlashAttention(torch.autograd.Function):
       BLOCK_SIZE_Q=16,
       BLOCK_SIZE_KV=16,
     )
+    ctx.save_for_backward(Q, K, V, O, M)
+    ctx.grid = grid
+    ctx.softmax_scale = softmax_scale
+    ctx.HEAD_DIM = HEAD_DIM_K
     return O
   
   @staticmethod
   def backward(ctx, dO):
      # TODO
-     pass
+    Q, K, V, O, M = ctx.saved_tensors
+    assert dO.is_contiguous()
+    assert Q.stride() == K.stride() == V.stride() == O.stride() == dO.stride()
+    dQ = torch.empty_like(Q)
+    dK = torch.empty_like(K)
+    dV = torch.empty_like(V)
+    pass
 
 @triton.jit
 def _attn_fwd(
@@ -68,6 +83,7 @@ def _attn_fwd(
     K_ptr,  # BATCH_SIZE, NUM_HEADS, SEQ_LEN, HEAD_DIM
     V_ptr,  # BATCH_SIZE, NUM_HEADS, SEQ_LEN, HEAD_DIM
     O_ptr,  # BATCH_SIZE, NUM_HEADS, SEQ_LEN, HEAD_DIM
+    M_ptr,  # BATCH_SIZE, NUM_HEADS, SEQ_LEN
     softmax_scale,
     stride_Q_batch,
     stride_Q_head,
@@ -85,6 +101,9 @@ def _attn_fwd(
     stride_O_head,
     stride_O_seq,
     stride_O_dim,
+    stride_M_batch,
+    stride_M_head,
+    stride_M_seq,
     BATCH_SIZE,
     NUM_HEADS: tl.constexpr,
     SEQ_LEN: tl.constexpr,
@@ -105,6 +124,14 @@ def _attn_fwd(
   Total degree of parallelization will be: 
   
   (SEQ_LEN // BLOCK_SIZE Q) * BATCH_SIZE * NUM_HEADS
+
+  :Q_ptr: pointer to query tensor
+  :K_ptr: pionter to key tensor
+  :V_ptr: pointer to value tensor
+  :O_ptr: pointer to output tensor to write result to
+  :M_ptr: pointer to tensor to store `rowmax[i] + log(softmax_denom[i])`
+          values to use to recompute the softmax values in in the backward
+          pass with the logsumexp trick
   '''
   inf = 1.0e6
 
@@ -250,6 +277,14 @@ def _attn_fwd(
   # store O block output in HBM
   tl.store(O_block_ptr, O_block)
 
+  # store m_i + log(l_i) which can be used to recompute softmax in backward pass
+  # using the logsumexp trick.
+  s_max += tl.math.log(softmax_denom)                           # (BLOCK_SIZE_Q,)
+
+  offs_m = offs_q + (batch_idx * stride_M_batch) + (head_idx * stride_M_head)
+  tl.store(M_ptr + offs_m, s_max)
+  
+
 def test_op(BATCH_SIZE, NUM_HEADS, SEQ_LEN, HEAD_DIM, dtype=torch.float32):
     device = "cuda" if torch.cuda.is_available() else "cpu"
     Q = (
@@ -300,4 +335,4 @@ def test_op(BATCH_SIZE, NUM_HEADS, SEQ_LEN, HEAD_DIM, dtype=torch.float32):
 
 
 if __name__ == "__main__":
-    test_op(BATCH_SIZE=2, NUM_HEADS=2, SEQ_LEN=32, HEAD_DIM=64)
+    test_op(BATCH_SIZE=8, NUM_HEADS=4, SEQ_LEN=2048, HEAD_DIM=128)
