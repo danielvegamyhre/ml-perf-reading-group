@@ -57,26 +57,113 @@ class FlashAttention(torch.autograd.Function):
       NUM_HEADS=num_heads,
       SEQ_LEN=seq_len,
       HEAD_DIM=head_dim,
-      BLOCK_SIZE_Q=16,
-      BLOCK_SIZE_KV=16,
     )
     ctx.save_for_backward(Q, K, V, O, M)
     ctx.grid = grid
     ctx.softmax_scale = softmax_scale
-    ctx.HEAD_DIM = HEAD_DIM_K
     return O
   
   @staticmethod
   def backward(ctx, dO):
-    Q, K, V, O, M = ctx.saved_tensors
+    (
+      Q, # BATCH_SIZE, NUM_HEADS, SEQ_LEN, HEAD_DIM
+      K, # BATCH_SIZE, NUM_HEADS, SEQ_LEN, HEAD_DIM
+      V, # BATCH_SIZE, NUM_HEADS, SEQ_LEN, HEAD_DIM
+      O, # BATCH_SIZE, NUM_HEADS, SEQ_LEN, HEAD_DIM
+      M, # BATCH_SIZE, NUM_HEADS, SEQ_LEN
+    ) = ctx.saved_tensors
+
     assert dO.is_contiguous()
     assert Q.stride() == K.stride() == V.stride() == O.stride() == dO.stride()
+
     dQ = torch.empty_like(Q)
     dK = torch.empty_like(K)
     dV = torch.empty_like(V)
-    
-    
+    D = torch.empty_like(M)
 
+    BATCH_SIZE, NUM_HEADS, SEQ_LEN = Q.shape[:3]
+    HEAD_DIM_KV = Q.shape(3)
+
+    # compute D, the 
+    d_grid = lambda meta: (
+       triton.cdiv(SEQ_LEN, meta['BLOCK_SIZE_Q']),
+       BATCH_SIZE * NUM_HEADS,
+    )
+    _attn_bwd_preprocess[d_grid](
+       O,
+       dO,
+       D,
+       O.stride(0),
+       O.stride(1),
+       O.stride(2),
+       O.stride(3),
+       dO.stride(0),
+       dO.stride(1),
+       dO.stride(2),
+       dO.stride(3),
+       D.stride(0),
+       D.stride(1),
+       D.stride(2),
+       NUM_HEADS,
+       SEQ_LEN,
+       HEAD_DIM_KV,
+    )
+
+@triton.jit
+def _attn_bwd_preprocess(
+    O,   # BATCH_SIZE, NUM_HEADS, SEQ_LEN, HEAD_DIM
+    dO,  # BATCH_SIZE, NUM_HEADS, SEQ_LEN, HEAD_DIM
+    D,   # BATCH_SIZE, NUM_HEADS, SEQ_LEN
+    stride_O_batch,
+    stride_O_head,
+    stride_O_seq,
+    stride_O_dim,
+    stride_dO_batch,
+    stride_dO_head,
+    stride_dO_seq,
+    stride_dO_dim, 
+    stride_D_batch,
+    stride_D_head,
+    stride_D_seq,
+    NUM_HEADS: tl.constexpr,
+    SEQ_LEN: tl.constexpr,
+    HEAD_DIM: tl.constexpr,
+    BLOCK_SIZE_SEQ: tl.constexpr,
+):
+    query_block_idx = tl.program_id(axis=0)
+    batch_head_idx = tl.program_id(axis=1)
+    batch_idx = batch_head_idx // NUM_HEADS
+    head_idx = batch_head_idx % NUM_HEADS
+
+    # load O and dO blocks into SRAM
+    offs_seq = query_block_idx * BLOCK_SIZE_SEQ + tl.arange(0, BLOCK_SIZE_SEQ)
+    offs_head = tl.arange(0, HEAD_DIM)
+    offs_o = (
+       batch_idx * stride_O_batch + head_idx * stride_O_head
+       + offs_seq[:, None] * stride_O_seq
+       + offs_head[None, :]
+    )
+
+    O_block = tl.load(offs_o)                            # (BLOCK_SIZE_SEQ, HEAD_DIM)
+    dO_block = tl.load(offs_o)                           # (BLOCK_SIZE_SEQ, HEAD_DIM)
+
+    # compute D_i block and store in HBM
+    Di_block = tl.sum(O_block * dO_block, axis=1)        # (BLOCK_SIZE_SEQ,)
+    offs_di = (
+       batch_idx * stride_D_batch + batch_head_idx * stride_D_head
+       + offs_seq
+    )
+    tl.store(D + offs_di, Di_block)
+
+
+
+    
+@triton.autotune(configs=[
+    triton.Config(kwargs={'BLOCK_SIZE_Q': 64, 'BLOCK_SIZE_KV': 64}, num_warps=4),
+    triton.Config(kwargs={'BLOCK_SIZE_Q': 128, 'BLOCK_SIZE_KV': 128}, num_warps=4),
+  ],
+  key=['BATCH_SIZE'],
+)
 @triton.jit
 def _attn_fwd(
     Q_ptr,  # BATCH_SIZE, NUM_HEADS, SEQ_LEN, HEAD_DIM
