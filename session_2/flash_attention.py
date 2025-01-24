@@ -79,7 +79,7 @@ class FlashAttention(torch.autograd.Function):
     dQ = torch.empty_like(Q)
     dK = torch.empty_like(K)
     dV = torch.empty_like(V)
-    D = torch.empty_like(M)
+    D = torch.empty_like(M)     # intermediate value used to make computing dK dV easier
 
     BATCH_SIZE, NUM_HEADS, SEQ_LEN = Q.shape[:3]
     HEAD_DIM_KV = Q.shape(3)
@@ -90,24 +90,77 @@ class FlashAttention(torch.autograd.Function):
        BATCH_SIZE * NUM_HEADS,
     )
     _attn_bwd_preprocess[d_grid](
-       O,
-       dO,
-       D,
-       O.stride(0),
-       O.stride(1),
-       O.stride(2),
-       O.stride(3),
-       dO.stride(0),
-       dO.stride(1),
-       dO.stride(2),
-       dO.stride(3),
-       D.stride(0),
-       D.stride(1),
-       D.stride(2),
-       NUM_HEADS,
-       SEQ_LEN,
-       HEAD_DIM_KV,
+       O=O,
+       dO=dO,
+       D=D,
+       stride_O_batch=O.stride(0),
+       stride_O_head=O.stride(1),
+       stride_O_seq=O.stride(2),
+       stride_O_dim=O.stride(3),
+       stride_dO_batch=dO.stride(0),
+       stride_dO_head=dO.stride(1),
+       stride_dO_seq=dO.stride(2),
+       stride_dO_dim=dO.stride(3),
+       stride_D_batch=D.stride(0),
+       stride_D_head=D.stride(1),
+       stride_D_seq=D.stride(2),
+       NUM_HEADS=NUM_HEADS,
+       SEQ_LEN=SEQ_LEN,
+       HEAD_DIM=HEAD_DIM_KV,
     )
+
+    grid = lambda meta: (
+      triton.cdiv(SEQ_LEN, 'BLOCK_SIZE_SEQ'),
+      BATCH_SIZE * NUM_HEADS,
+    )
+    _attn_bwd_dk_dv[grid](
+        Q=Q,
+        K=K,
+        V=V,
+        softmax_scale=ctx.softmax_scale,
+        dO=dO,
+        dQ=dQ,
+        dK=dK,
+        dV=dV,
+        M=M,
+        D=D,
+        stride_batch=Q.stride(0),
+        stride_head=Q.stride(1),
+        stride_seq=Q.stride(2),
+        stride_dim=Q.stride(3),
+        NUM_HEADS=NUM_HEADS,
+        SEQ_LEN=SEQ_LEN,
+        HEAD_DIM=ctx.head_dim,
+    )
+    # TODO
+
+@triton.jit
+def _attn_bwd_dk_dv(
+    Q,
+    K,
+    V,
+    softmax_scale,
+    dO,
+    dQ,
+    dK,
+    dV,
+    M,
+    D,
+    stride_q_batch,
+    stride_q_head,
+    stride_q_seq,
+    stride_q_dim,
+    NUM_HEADS: tl.constexpr,
+    SEQ_LEN: tl.constexpr,
+    HEAD_DIM: tl.constexpr,
+):
+    batch_head_idx = tl.program_id(axis=1)
+    batch_idx = batch_head_idx // NUM_HEADS
+    head_idx = batch_head_idx % NUM_HEADS
+
+    offs_seq = batch_idx * stride_q_batch + head_idx * stride_q_dim
+    # TODO
+
 
 @triton.jit
 def _attn_bwd_preprocess(
@@ -154,8 +207,6 @@ def _attn_bwd_preprocess(
        + offs_seq
     )
     tl.store(D + offs_di, Di_block)
-
-
 
     
 @triton.autotune(configs=[
