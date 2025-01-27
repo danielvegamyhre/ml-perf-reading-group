@@ -1,4 +1,4 @@
-# ML-scalability-and-performance
+# EleutherAI ML Scalability & Performance Reading Group
 Slides and recordings for the EleutherAI ML Scalability &amp; Performance Reading Group.
 
 Sessions:
