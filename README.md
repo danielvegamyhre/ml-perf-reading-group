@@ -4,8 +4,15 @@ My annotated papers, slides, and meeting recordings for the EleutherAI ML Scalab
 
 Sessions:
 
-1. [Intro to GPU architecture, CUDA, NCCL, and common ML performance bottlenecks](./session_1/)
-2. [FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness](./session_2/)
-3. [ZeRO: Memory Optimizations Toward Training Trillion Parameter Models](./session_3/)
-4. [Ring Attention with Blockwise Transformers for Near-Infinite Context Length](./session_4)
-5. [Efficient Memory Management for Large Language Model Serving with PagedAttention](./session_5/)
+1. [Session 1](./session_1/)
+    - [Intro to GPU architecture, CUDA, NCCL, and common ML performance bottlenecks](https://www.youtube.com/watch?v=Cp7g1Ll4v0M)
+2. [Session 2](./session_2/)
+    - [FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness](./session_2/flash_attention_[annotated].pdf)
+3. [Session 3](./session_3/)
+    - [ZeRO: Memory Optimizations Toward Training Trillion Parameter Models](https://arxiv.org/abs/1910.02054)
+4. [Session 4](./session_4)
+    - [Sequence Parallelism: Long Sequence Training from System Perspective](./session_4/sequence_parallelism_[annotated].pdf)
+    - [Blockwise Parallel Transformer for Large Context Models](./session_4/blockwise_transformers_[annotated].pdf)
+    - [Ring Attention with Blockwise Transformers for Near-Infinite Context Length](./session_4/ring_attention_[annotated].pdf)
+5. [Session 5](./session_5/)
+    - [Efficient Memory Management for Large Language Model Serving with PagedAttention](https://arxiv.org/abs/2309.06180)
