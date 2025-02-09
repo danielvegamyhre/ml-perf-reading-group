@@ -16,3 +16,7 @@ Sessions:
     - [Ring Attention with Blockwise Transformers for Near-Infinite Context Length](./session_4/ring_attention_[annotated].pdf)
 5. [Session 5](./session_5/)
     - [Efficient Memory Management for Large Language Model Serving with PagedAttention](https://arxiv.org/abs/2309.06180)
+6. [Session 6](./session_6)
+    - [GPipe: Efficient Training of Giant Neural Networks using Pipeline Parallelism](./session_6/gpipe_[annotated].pdf)
+    - [PipeDream: Fast and Efficient Pipeline Parallel DNN Training](./session_6/pipe_dream_[annotated].pdf)
+    - [Zero Bubble Pipeline Parallelism](./session_6/zero_bubble_pipeline_parallelism_[annotated].pdf)
