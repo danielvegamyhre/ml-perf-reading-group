@@ -20,3 +20,6 @@ Sessions:
     - [GPipe: Efficient Training of Giant Neural Networks using Pipeline Parallelism](./session_6/gpipe_[annotated].pdf)
     - [PipeDream: Fast and Efficient Pipeline Parallel DNN Training](./session_6/pipe_dream_[annotated].pdf)
     - [Zero Bubble Pipeline Parallelism](./session_6/zero_bubble_pipeline_parallelism_[annotated].pdf)
+7. [Session 7](./session_7/)
+    - [DeepSeek V3](./session_7/deepseek-v3_[annotated].pdf)
+    - [DeepSeek V2](./session_7/deepseek-v2_[annotated].pdf)

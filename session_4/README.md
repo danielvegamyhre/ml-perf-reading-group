@@ -9,5 +9,9 @@ Papers:
 2. Blockwise Parallel Transformer for Large Context Models (https://arxiv.org/abs/2305.19370)
 3. Ring Attention with Blockwise Transformers for Near-Infinite Context (https://arxiv.org/abs/2310.01889)
 
+### Links:
 - [Slides](https://docs.google.com/presentation/d/1mQQJf_aFqKUewRM97d0xAQQrGLmsnMQIjmO_dovYlWs/edit?usp=sharing)
 - [Recording](https://youtu.be/fC9L8J7dVFI?si=3pfS2C3p0hTUDX5y)
+- [Annotated sequence parallelism paper](./sequence_parallelism_[annotated].pdf)
+- [Annotated blockwise transformers paper](./blockwise_transformers_[annotated].pdf)
+- [Annotated ring attention paper](./ring_attention_[annotated].pdf)

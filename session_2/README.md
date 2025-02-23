@@ -5,6 +5,7 @@ with IO-Awareness](https://arxiv.org/pdf/2205.14135), and walked through my Trit
 
 **Presenters**: Ben Schneider, Daniel Vega-Myhre
 
-- [Paper](https://arxiv.org/pdf/2205.14135)
+### Links
 - [Recording](https://youtu.be/Lys0TpsLIEc?si=T1Fy8Lf874Ax0d6S)
 - [Triton kernel](./flash_attention.py)
+- [Annotated flash attention paper](./flash_attention_[annotated].pdf)
