@@ -23,3 +23,5 @@ Sessions:
 7. [Session 7](./session_7/)
     - [DeepSeek V3](./session_7/deepseek-v3_[annotated].pdf)
     - [DeepSeek V2](./session_7/deepseek-v2_[annotated].pdf)
+8. [Session 8](./session_8)
+    - [Megatron-LM: Training Multi-Billion Parameter Language Models Using Model Parallelism](https://arxiv.org/abs/1909.08053)
