@@ -1,6 +1,6 @@
-# Session 7: DeepSeek V3
+# Session 8: Megatron-LM
 
-EleutherAI ML Scalability & Performance Reading Group Session 7, where we covered the Megatron-LM paper, which introduced tensor parallelism.
+EleutherAI ML Scalability & Performance Reading Group Session 8, where we covered the Megatron-LM paper, which introduced tensor parallelism.
 
 **Presenter**: Daniel Vega-Myhre
 
