@@ -25,3 +25,5 @@ Sessions:
     - [DeepSeek V2](./session_7/deepseek-v2_[annotated].pdf)
 8. [Session 8](./session_8)
     - [Megatron-LM: Training Multi-Billion Parameter Language Models Using Model Parallelism](https://arxiv.org/abs/1909.08053)
+9. [Session 9](./session_9/)
+    - [Reducing Activation Recomputation in Large Transformer Models](https://arxiv.org/abs/2205.05198)
