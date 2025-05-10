@@ -27,3 +27,5 @@ Sessions:
     - [Megatron-LM: Training Multi-Billion Parameter Language Models Using Model Parallelism](https://arxiv.org/abs/1909.08053)
 9. [Session 9](./session_9/)
     - [Reducing Activation Recomputation in Large Transformer Models](https://arxiv.org/abs/2205.05198)
+10. [Session 10](./session_10/)
+    - [Task-Circuit Quantization: Leveraging Knowledge Localization and Interpretability for Compression](https://arxiv.org/abs/2504.07389)
