@@ -29,3 +29,5 @@ Sessions:
     - [Reducing Activation Recomputation in Large Transformer Models](https://arxiv.org/abs/2205.05198)
 10. [Session 10](./session_10/)
     - [Task-Circuit Quantization: Leveraging Knowledge Localization and Interpretability for Compression](https://arxiv.org/abs/2504.07389)
+11. [Session 11](./session_11) 
+    - [Overlap Communication with Dependent Computation via Decomposition in Large Deep Learning Models](https://dl.acm.org/doi/abs/10.1145/3567955.3567959)
