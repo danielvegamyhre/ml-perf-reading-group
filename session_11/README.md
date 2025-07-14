@@ -5,7 +5,6 @@ EleutherAI ML Scalability & Performance Reading Group Session 11 meeting recordi
 Presenter: Daniel Vega-Myhre
 
 ### Links:
-- [Overlap Communication with Dependent Computation via Decomposition in Large Deep Learning Models](./overlapping-communication-and-computation-via-decomposition.pdf)
-- [PyTorch Async Tensor Parallelism blog post](https://discuss.pytorch.org/t/distributed-w-torchtitan-introducing-async-tensor-parallelism-in-pytorch/209487)
+- [Paper: Overlap Communication with Dependent Computation via Decomposition in Large Deep Learning Models](./overlapping-communication-and-computation-via-decomposition.pdf)
+- My blog post: [An illustrated deep-dive into how the compute and comms in TP+SP are overlapped using Async TP](https://danielvegamyhre.github.io/ml/performance/2025/05/26/async-tp.html)
 - [Meeting recording](https://youtu.be/Ow1FLKFcSPs?si=KANmECRX1vRt4C_W)
-- [Presentation diagrams](./diagrams.png)
