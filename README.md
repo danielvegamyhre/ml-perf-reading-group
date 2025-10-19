@@ -37,3 +37,5 @@ Sessions:
     - [Unified Sequence Parallelism](https://arxiv.org/abs/2405.07719)
 14. [Session 14](./session_14/)
     - [A Survey of Quantization Methods for Efficient Neural Network Inference](https://arxiv.org/abs/2103.13630)
+15. [Session 15](./session_15/)
+    - [MegaBlocks](https://arxiv.org/pdf/2211.15841)
