@@ -39,3 +39,5 @@ Sessions:
     - [A Survey of Quantization Methods for Efficient Neural Network Inference](https://arxiv.org/abs/2103.13630)
 15. [Session 15](./session_15/)
     - [MegaBlocks](https://arxiv.org/pdf/2211.15841)
+16. [Session 16](./session_16)
+    - [LMCache](https://arxiv.org/pdf/2510.09665)

@@ -1,4 +1,4 @@
-# Session 14: A Survey of Quantization Methods for Efficient Neural Network Inference
+# Session 15: Megablocks
 
 EleutherAI ML Performance Reading Group Session 15, where we covered the paper [MegaBlocks](https://arxiv.org/pdf/2211.15841).
 
