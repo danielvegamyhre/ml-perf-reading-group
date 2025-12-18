@@ -41,3 +41,7 @@ Sessions:
     - [MegaBlocks](https://arxiv.org/pdf/2211.15841)
 16. [Session 16](./session_16)
     - [LMCache](https://arxiv.org/pdf/2510.09665)
+17. [Session 17](./session_17/)
+    - [MXFP8 Training for MoEs with TorchAO](https://pytorchconference.sched.com/event/27QE0/pytorch-apis-for-high-performance-moe-training-and-inference-daniel-vega-myhre-ke-wen-natalia-gimelshein-meta)
+18. [Session 18](./session_18)
+    - [Kimi Delta Attention](https://arxiv.org/abs/2510.26692)
