@@ -2,7 +2,9 @@
 
 My annotated papers, slides, and meeting recordings for the EleutherAI ML Scalability & Performance research paper reading group.
 
-Sessions:
+Here is the full [YouTube Playlist](https://www.youtube.com/playlist?list=PLvtrkEledFjqOLuDB_9FWL3dgivYqc6-3) of prior sessions
+
+Here are resources for each session:
 
 1. [Session 1](./session_1/)
     - [Intro to GPU architecture, CUDA, NCCL, and common ML performance bottlenecks](https://www.youtube.com/watch?v=Cp7g1Ll4v0M)
